@@ -28,7 +28,32 @@ sudo apt update && sudo apt install -y nginx
 
 # 建立 SSL 憑證目錄並生成自簽證書
 sudo mkdir -p /opt/SSL
-sudo openssl req -x509 -newkey rsa:4096 -keyout /opt/SSL/private.key -out /opt/SSL/certificate.crt -days "$days" -nodes -subj "/CN=$DOMAIN"
+
+cat <<EOF | sudo tee /opt/SSL/san.cnf
+[ req ]
+default_bits = 4096
+prompt = no
+default_md = sha256
+req_extensions = req_ext
+distinguished_name = dn
+
+[ dn ]
+C = TW
+ST = Taiwan
+L = Taichung
+O = $FILENAME
+OU = IT
+CN = $DOMAIN
+
+[ req_ext ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = $DOMAIN
+EOF
+
+# 將憑證和私鑰輸出到 /opt/SSL/
+sudo openssl req -x509 -newkey rsa:4096 -keyout /opt/SSL/private.key -out /opt/SSL/certificate.crt -days "$days" -nodes -config /opt/SSL/san.cnf -extensions req_ext
 
 # 設置適當的權限
 sudo chmod 600 /opt/SSL/private.key
