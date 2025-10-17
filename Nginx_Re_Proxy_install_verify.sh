@@ -28,9 +28,34 @@ install_nginx() {
 generate_ssl_certificate() {
   local domain="$1"
   local days="$2"
+  local filename="$3"
   echo "正在生成 SSL 證書..."
   sudo mkdir -p /opt/SSL
-  sudo openssl req -x509 -newkey rsa:4096 -keyout /opt/SSL/private.key -out /opt/SSL/certificate.crt -days "$days" -nodes -subj "/CN=$domain"
+
+cat <<EOF | sudo tee /opt/SSL/san.cnf
+[ req ]
+default_bits = 4096
+prompt = no
+default_md = sha256
+req_extensions = req_ext
+distinguished_name = dn
+
+[ dn ]
+C = TW
+ST = Taiwan
+L = Taichung
+O = $filename
+OU = IT
+CN = $domain
+
+[ req_ext ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = $domain
+EOF
+
+  sudo openssl req -x509 -newkey rsa:4096 -keyout /opt/SSL/private.key -out /opt/SSL/certificate.crt -days "$days" -nodes -config /opt/SSL/san.cnf -extensions req_ext
   if [ $? -ne 0 ]; then
     echo "錯誤：SSL 證書生成失敗。"
     exit 1
@@ -70,7 +95,7 @@ else
 fi
 
 install_nginx
-generate_ssl_certificate "$DOMAIN" "$days"
+generate_ssl_certificate "$DOMAIN" "$days" "$FILENAME"
 
 # 配置 Nginx
 sudo tee /etc/nginx/sites-available/"$FILENAME" <<EOF

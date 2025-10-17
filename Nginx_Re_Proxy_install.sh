@@ -26,7 +26,7 @@ fi
 # 安裝 Nginx
 sudo apt update && sudo apt install -y nginx
 
-# 建立 SSL 憑證目錄並生成自簽證書
+# 建立 SSL 憑證目錄並生成自簽證書 (含SAN)
 sudo mkdir -p /opt/SSL
 
 cat <<EOF | sudo tee /opt/SSL/san.cnf
@@ -117,6 +117,7 @@ sudo systemctl restart nginx
 
 echo -e "\\n-----------------------------\\n"
 echo "證書效期: $days 天"
+echo "證書位置: /opt/SSL"
 echo "來源網址: $SOURCE_URL"
 echo "反向代理: https://$DOMAIN"
 echo -e "\\n-----------------------------"
